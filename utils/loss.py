@@ -139,11 +139,13 @@ class ComputeLoss:
                 pwh = (pwh.sigmoid() * 2) ** 2 * anchors[i]
                 pbox = torch.cat((pxy, pwh), 1)  # predicted box
                 iou = bbox_iou(pbox, tbox[i], CIoU=True).squeeze()  # iou(prediction, target)
-                print(iou.mean())
-                lbox += (1.0 - iou).mean()  # iou loss
+                ious = iou.tolist()
+                pos = [x for x in ious if x >= 0.3]
+                lbox += (1.0 - torch.Tensor(pos)).mean()  # iou loss
 
                 # Objectness
                 iou = iou.detach().clamp(0).type(tobj.dtype)
+                print(iou)
                 if self.sort_obj_iou:
                     j = iou.argsort()
                     b, a, gj, gi, iou = b[j], a[j], gj[j], gi[j], iou[j]
