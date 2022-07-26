@@ -160,7 +160,7 @@ class ComputeLoss:
                 # print("--------------")
 
 
-                lbox += (1.0 - iou).mean()  # iou loss
+                lbox += (1.0 - finals).mean()  # iou loss
 
                 # Objectness
                 iou = iou.detach().clamp(0).type(tobj.dtype)
