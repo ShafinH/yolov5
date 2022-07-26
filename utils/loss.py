@@ -118,6 +118,7 @@ class ComputeLoss:
         self.nl = m.nl  # number of layers
         self.anchors = m.anchors
         self.device = device
+        self.rho = 0.2
 
     def __call__(self, p, targets):  # predictions, targets
         lcls = torch.zeros(1, device=self.device)  # class loss
@@ -144,7 +145,7 @@ class ComputeLoss:
             
                 ious = iou.tolist()
                 negs = [x for x in ious if x < 0.3]
-                negs = random.sample(negs,int(len(negs)*(1-0.0)))
+                negs = random.sample(negs,int(len(negs)*(1-self.rho)))
                 pos = [x for x in ious if x >= 0.3]
                 finals = pos + negs
                 finals = torch.Tensor(finals)
