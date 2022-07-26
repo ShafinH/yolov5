@@ -11,7 +11,6 @@ from utils.torch_utils import de_parallel
 
 import random
 
-
 def smooth_BCE(eps=0.1):  # https://github.com/ultralytics/yolov3/issues/238#issuecomment-598028441
     # return positive, negative label smoothing BCE targets
     return 1.0 - 0.5 * eps, 0.5 * eps
@@ -141,16 +140,29 @@ class ComputeLoss:
                 pwh = (pwh.sigmoid() * 2) ** 2 * anchors[i]
                 pbox = torch.cat((pxy, pwh), 1)  # predicted box
                 iou = bbox_iou(pbox, tbox[i], CIoU=True).squeeze()  # iou(prediction, target)
+
+            
                 ious = iou.tolist()
                 negs = [x for x in ious if x < 0.3]
-                negs = random.sample(negs,int(len(negs)*(1-0.25)))
+                negs = random.sample(negs,int(len(negs)*(1-0.0)))
                 pos = [x for x in ious if x >= 0.3]
                 finals = pos + negs
-                lbox += (1.0 - torch.Tensor(finals)).mean()  # iou loss
+                finals = torch.Tensor(finals)
+
+                finals = finals.to(torch.device('cuda:0'))
+
+                # print(finals)
+
+                # print((1.0 - iou).mean())
+                # print((1.0 - finals).mean())
+
+                # print("--------------")
+
+
+                lbox += (1.0 - iou).mean()  # iou loss
 
                 # Objectness
                 iou = iou.detach().clamp(0).type(tobj.dtype)
-                print(iou)
                 if self.sort_obj_iou:
                     j = iou.argsort()
                     b, a, gj, gi, iou = b[j], a[j], gj[j], gi[j], iou[j]
