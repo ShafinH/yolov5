@@ -142,22 +142,19 @@ class ComputeLoss:
                 pwh = (pwh.sigmoid() * 2) ** 2 * anchors[i]
                 pbox = torch.cat((pxy, pwh), 1)  # predicted box
                 iou = bbox_iou(pbox, tbox[i], CIoU=True).squeeze()  # iou(prediction, target)\
-                nums = []
-                ious = iou.tolist()
+
                 iou1 = iou
-                for index123, num123 in enumerate(ious):
-                  if num123 < 0.3:
-                    # print(num123)
-                    nums.append(index123)
-
-                nums = random.sample(nums,int(len(nums)*(1-self.rho)))
-
-                for num12 in range(iou1.size(dim=0)):
-                  if num12 in nums:
+                neg_inds = torch.where(iou < 0.3)
+                neg_inds = neg_inds[0].tolist()
+                print(iou1)
+                # for num12 in range(iou1.size(dim=0)):
+                print(torch.numel(iou1))
+                for num12 in range(torch.numel(iou1)):
+                  if num12 in neg_inds:
                     iou1 = torch.cat([iou1[0:num12], iou1[num12+1:]])
                     num12 -= 1
-                  
-                lbox += (1.0 - iou1).mean()  # iou loss
+
+                lbox += (1.0 - iou).mean()  # iou loss
 
                 # Objectness
                 iou = iou.detach().clamp(0).type(tobj.dtype)
