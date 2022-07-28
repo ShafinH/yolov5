@@ -11,6 +11,7 @@ from utils.torch_utils import de_parallel
 
 import random
 
+
 def smooth_BCE(eps=0.1):  # https://github.com/ultralytics/yolov3/issues/238#issuecomment-598028441
     # return positive, negative label smoothing BCE targets
     return 1.0 - 0.5 * eps, 0.5 * eps
@@ -118,7 +119,7 @@ class ComputeLoss:
         self.nl = m.nl  # number of layers
         self.anchors = m.anchors
         self.device = device
-        self.rho = 0.0
+        self.rho = 0.1
 
     def __call__(self, p, targets):  # predictions, targets
         lcls = torch.zeros(1, device=self.device)  # class loss
@@ -140,26 +141,23 @@ class ComputeLoss:
                 pxy = pxy.sigmoid() * 2 - 0.5
                 pwh = (pwh.sigmoid() * 2) ** 2 * anchors[i]
                 pbox = torch.cat((pxy, pwh), 1)  # predicted box
-                iou = bbox_iou(pbox, tbox[i], CIoU=True).squeeze()  # iou(prediction, target)
-
-            
+                iou = bbox_iou(pbox, tbox[i], CIoU=True).squeeze()  # iou(prediction, target)\
+                nums = []
                 ious = iou.tolist()
-                negs = [x for x in ious if x < 0.3]
-                negs = random.sample(negs,int(len(negs)*(1-self.rho)))
-                pos = [x for x in ious if x >= 0.3]
-                finals = pos + negs
-                finals = torch.tensor(finals, requires_grad =True)
-                
+                iou1 = iou
+                for index123, num123 in enumerate(ious):
+                  if num123 < 0.3:
+                    # print(num123)
+                    nums.append(index123)
 
-                finals = finals.to(torch.device('cuda:0'))
+                nums = random.sample(nums,int(len(nums)*(1-self.rho)))
 
-                print((1.0 - iou).mean())
-                print((1.0 - finals).mean())
-
-                print("--------------")
-
-
-                lbox += (1.0 - finals).mean()  # iou loss
+                for num12 in range(iou1.size(dim=0)):
+                  if num12 in nums:
+                    iou1 = torch.cat([iou1[0:num12], iou1[num12+1:]])
+                    num12 -= 1
+                  
+                lbox += (1.0 - iou1).mean()  # iou loss
 
                 # Objectness
                 iou = iou.detach().clamp(0).type(tobj.dtype)
