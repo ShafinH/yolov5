@@ -146,15 +146,16 @@ class ComputeLoss:
                 iou1 = iou
                 neg_inds = torch.where(iou < 0.3)
                 neg_inds = neg_inds[0].tolist()
-                print(iou1)
-                # for num12 in range(iou1.size(dim=0)):
-                print(torch.numel(iou1))
+
+                neg_inds = random.sample(range(len(neg_inds)), int((1.0-0.75)*(len(neg_inds))))
+
+
                 for num12 in range(torch.numel(iou1)):
                   if num12 in neg_inds:
                     iou1 = torch.cat([iou1[0:num12], iou1[num12+1:]])
                     num12 -= 1
 
-                lbox += (1.0 - iou).mean()  # iou loss
+                lbox += (1.0 - iou1).mean()  # iou loss
 
                 # Objectness
                 iou = iou.detach().clamp(0).type(tobj.dtype)
